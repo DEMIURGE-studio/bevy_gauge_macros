@@ -86,12 +86,14 @@ fn generate_modifier_set_add_calls(assignments: &Punctuated<StatAssignment, Toke
                 match item {
                     ValueItem::Literal(lit_float) => {
                         add_calls.push(quote! {
-                            modifier_set.add(#path_str, #lit_float);
+                            let processed_path = bevy_gauge::prelude::Konfig::process_path(#path_str);
+                            modifier_set.add(&processed_path, #lit_float);
                         });
                     }
                     ValueItem::StrExpression(lit_str) => {
                         add_calls.push(quote! {
-                            modifier_set.add(#path_str, #lit_str);
+                            let processed_path = bevy_gauge::prelude::Konfig::process_path(#path_str);
+                            modifier_set.add(&processed_path, #lit_str);
                         });
                     }
                 }
@@ -114,7 +116,8 @@ fn generate_modifier_set_add_calls(assignments: &Punctuated<StatAssignment, Toke
                     // Given the linter error context, the issue is likely type homogeneity in declarative macros.
                     // Proc macros fix this by generating distinct .add() calls.
                     add_calls.push(quote! {
-                        modifier_set.add(#path_str, #elem_expr);
+                        let processed_path = bevy_gauge::prelude::Konfig::process_path(#path_str);
+                        modifier_set.add(&processed_path, #elem_expr);
                     });
                 }
             }

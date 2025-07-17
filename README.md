@@ -17,7 +17,7 @@ bevy_gauge = "0.1"
 
 | bevy_gauge_macros | bevy_gauge | bevy   |
 |-------------------|------------|--------|
-| 0.1               | 0.1        | 0.16   |
+| 0.1.1             | 0.1.1      | 0.16   |
 
 ## License
 `bevy_gauge` is dual-licensed under either

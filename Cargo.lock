@@ -4,7 +4,7 @@ version = 4
 
 [[package]]
 name = "bevy_gauge_macros"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "derive-alias",
  "heck",
