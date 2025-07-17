@@ -1,6 +1,6 @@
 # bevy_gauge_macros
 
-Procedural macro crate for [bevy_gauge](https://github.com/your-repo/bevy_gauge) - a flexible stats system for Bevy.
+Procedural macro crate for [bevy_gauge](https://github.com/DEMIURGE-studio/bevy_gauge) - a flexible stats system for Bevy.
 
 This crate provides the procedural macros used by `bevy_gauge` to generate stat components, modifiers, and other compile-time functionality.
 
