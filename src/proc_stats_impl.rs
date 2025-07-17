@@ -16,7 +16,7 @@ struct StatAssignment {
 
 enum StatValue {
     Single(ValueItem),
-    Array(Box<syn::ExprArray>),
+    Array(syn::ExprArray),
 }
 
 enum ValueItem {
@@ -39,7 +39,8 @@ impl Parse for StatAssignment {
 impl Parse for StatValue {
     fn parse(input: ParseStream) -> SynResult<Self> {
         if input.peek(syn::token::Bracket) {
-            Ok(StatValue::Array(input.parse()?))
+            let array: syn::ExprArray = input.parse()?;
+            Ok(StatValue::Array(array))
         } else {
             Ok(StatValue::Single(input.parse()?))
         }

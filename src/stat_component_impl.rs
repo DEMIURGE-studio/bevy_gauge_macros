@@ -79,7 +79,6 @@ enum StatField {
 }
 
 /// Represents one field after parsing
-#[derive(Debug)]
 enum ParsedField {
     ReadFrom { 
         vis: Visibility,
