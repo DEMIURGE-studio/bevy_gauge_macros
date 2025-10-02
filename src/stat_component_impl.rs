@@ -19,7 +19,7 @@ struct StatStructInput {
     attrs: Vec<Attribute>,
 
     vis: Visibility,
-    _struct_token: Token![struct],
+    _struct_token: Option<Token![struct]>,
     ident: Ident,
     generics: syn::Generics,
     _brace_token: Brace,
@@ -125,8 +125,28 @@ impl Parse for StatStructInput {
         // Collect user-supplied outer attributes
         let attrs = input.call(Attribute::parse_outer)?;
 
-        let vis: Visibility = input.parse()?;
-        let struct_token: Token![struct] = input.parse()?;
+        // Parsing order matters to disambiguate intent:
+        // - If `struct` appears first, treat visibility as private (inherited)
+        // - Else if a visibility appears, use it; `struct` remains optional
+        // - Else, default to `pub` and assume struct is omitted
+
+        let (vis, struct_token): (Visibility, Option<Token![struct]>) = if input.peek(Token![struct]) {
+            // Explicit `struct` with no vis => private struct
+            let st: Token![struct] = input.parse()?;
+            (Visibility::Inherited, Some(st))
+        } else if input.peek(Token![pub])
+            || input.peek(Token![crate])
+            || input.peek(Token![self])
+            || input.peek(Token![super])
+        {
+            let v: Visibility = input.parse()?;
+            let st = if input.peek(Token![struct]) { Some(input.parse()?) } else { None };
+            (v, st)
+        } else {
+            // No vis and no `struct`: default to public, and assume omitted `struct`
+            (syn::parse_quote!(pub), None)
+        };
+
         let ident: Ident = input.parse()?;
         let generics: syn::Generics = input.parse()?;
 
