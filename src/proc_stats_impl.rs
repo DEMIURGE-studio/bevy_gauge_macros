@@ -156,3 +156,106 @@ pub fn stats(input: TokenStream) -> TokenStream {
 
     TokenStream::from(expanded)
 }
+
+// ===== instant! macro =====
+
+struct InstantAssignment {
+    path: LitStr,
+    op: InstantOp,
+    value: ValueItem,
+}
+
+enum InstantOp { Set, Add, Sub }
+
+impl Parse for InstantOp {
+    fn parse(input: ParseStream) -> SynResult<Self> {
+        if input.peek(Token![+=]) {
+            let _t: Token![+=] = input.parse()?;
+            Ok(InstantOp::Add)
+        } else if input.peek(Token![-=]) {
+            let _t: Token![-=] = input.parse()?;
+            Ok(InstantOp::Sub)
+        } else if input.peek(Token![=]) {
+            let _t: Token![=] = input.parse()?;
+            Ok(InstantOp::Set)
+        } else {
+            Err(Error::new(input.span(), "expected one of '=', '+=', '-='"))
+        }
+    }
+}
+
+impl Parse for InstantAssignment {
+    fn parse(input: ParseStream) -> SynResult<Self> {
+        Ok(InstantAssignment {
+            path: input.parse()?,
+            op: input.parse()?,
+            value: input.parse()?,
+        })
+    }
+}
+
+struct InstantInput {
+    assignments: Punctuated<InstantAssignment, Token![,]>
+}
+
+impl Parse for InstantInput {
+    fn parse(input: ParseStream) -> SynResult<Self> {
+        let assignments = Punctuated::<InstantAssignment, Token![,]>::parse_terminated(input)?;
+        Ok(InstantInput { assignments })
+    }
+}
+
+pub fn instant(input: TokenStream) -> TokenStream {
+    let parsed = parse_macro_input!(input as InstantInput);
+
+    let mut pushes = Vec::new();
+    for item in parsed.assignments.iter() {
+        let path = &item.path;
+        match (&item.op, &item.value) {
+            (InstantOp::Set, ValueItem::Literal(val)) => {
+                pushes.push(quote! {
+                    let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                    instant.add_set(&processed_path, #val);
+                });
+            }
+            (InstantOp::Set, ValueItem::StrExpression(expr)) => {
+                pushes.push(quote! {
+                    let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                    instant.add_set(&processed_path, #expr);
+                });
+            }
+            (InstantOp::Add, ValueItem::Literal(val)) => {
+                pushes.push(quote! {
+                    let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                    instant.add_add(&processed_path, #val);
+                });
+            }
+            (InstantOp::Add, ValueItem::StrExpression(expr)) => {
+                pushes.push(quote! {
+                    let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                    instant.add_add(&processed_path, #expr);
+                });
+            }
+            (InstantOp::Sub, ValueItem::Literal(val)) => {
+                pushes.push(quote! {
+                    let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                    instant.add_sub(&processed_path, #val);
+                });
+            }
+            (InstantOp::Sub, ValueItem::StrExpression(expr)) => {
+                pushes.push(quote! {
+                    let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                    instant.add_sub(&processed_path, #expr);
+                });
+            }
+        }
+    }
+
+    let expanded = quote! {{
+        let mut instant = bevy_gauge::prelude::Instant::default();
+        #(#pushes)*
+        instant
+    }};
+
+    TokenStream::from(expanded)
+}

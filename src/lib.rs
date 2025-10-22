@@ -34,3 +34,8 @@ pub fn mod_set(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
 pub fn stats(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     proc_stats_impl::stats(input)
 }
+
+#[proc_macro]
+pub fn instant(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    proc_stats_impl::instant(input)
+}
