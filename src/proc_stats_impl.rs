@@ -162,7 +162,7 @@ pub fn stats(input: TokenStream) -> TokenStream {
 struct InstantAssignment {
     path: LitStr,
     op: InstantOp,
-    value: ValueItem,
+    value: StatValue,
 }
 
 enum InstantOp { Set, Add, Sub }
@@ -212,47 +212,74 @@ pub fn instant(input: TokenStream) -> TokenStream {
     for item in parsed.assignments.iter() {
         let path = &item.path;
         match (&item.op, &item.value) {
-            (InstantOp::Set, ValueItem::Literal(val)) => {
+            // Single value
+            (InstantOp::Set, StatValue::Single(ValueItem::Literal(val))) => {
                 pushes.push(quote! {
                     let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
                     instant.add_set(&processed_path, #val);
                 });
             }
-            (InstantOp::Set, ValueItem::StrExpression(expr)) => {
+            (InstantOp::Set, StatValue::Single(ValueItem::StrExpression(expr))) => {
                 pushes.push(quote! {
                     let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
                     instant.add_set(&processed_path, #expr);
                 });
             }
-            (InstantOp::Add, ValueItem::Literal(val)) => {
+            (InstantOp::Add, StatValue::Single(ValueItem::Literal(val))) => {
                 pushes.push(quote! {
                     let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
                     instant.add_add(&processed_path, #val);
                 });
             }
-            (InstantOp::Add, ValueItem::StrExpression(expr)) => {
+            (InstantOp::Add, StatValue::Single(ValueItem::StrExpression(expr))) => {
                 pushes.push(quote! {
                     let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
                     instant.add_add(&processed_path, #expr);
                 });
             }
-            (InstantOp::Sub, ValueItem::Literal(val)) => {
+            (InstantOp::Sub, StatValue::Single(ValueItem::Literal(val))) => {
                 pushes.push(quote! {
                     let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
                     instant.add_sub(&processed_path, #val);
                 });
             }
-            (InstantOp::Sub, ValueItem::StrExpression(expr)) => {
+            (InstantOp::Sub, StatValue::Single(ValueItem::StrExpression(expr))) => {
                 pushes.push(quote! {
                     let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
                     instant.add_sub(&processed_path, #expr);
                 });
             }
+
+            // Array values: emit one op per element
+            (InstantOp::Set, StatValue::Array(expr_array)) => {
+                for elem_expr in &expr_array.elems {
+                    pushes.push(quote! {
+                        let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                        instant.add_set(&processed_path, #elem_expr);
+                    });
+                }
+            }
+            (InstantOp::Add, StatValue::Array(expr_array)) => {
+                for elem_expr in &expr_array.elems {
+                    pushes.push(quote! {
+                        let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                        instant.add_add(&processed_path, #elem_expr);
+                    });
+                }
+            }
+            (InstantOp::Sub, StatValue::Array(expr_array)) => {
+                for elem_expr in &expr_array.elems {
+                    pushes.push(quote! {
+                        let processed_path = bevy_gauge::prelude::Konfig::process_path(#path);
+                        instant.add_sub(&processed_path, #elem_expr);
+                    });
+                }
+            }
         }
     }
 
     let expanded = quote! {{
-        let mut instant = bevy_gauge::prelude::Instant::default();
+        let mut instant = bevy_gauge::prelude::InstantModifierSet::default();
         #(#pushes)*
         instant
     }};
